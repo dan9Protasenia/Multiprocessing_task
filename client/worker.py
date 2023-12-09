@@ -1,18 +1,17 @@
 import socket
 import json
 import logging
-import time
+
+from Multiprocessing_task.logger import setup_logger
+from Multiprocessing_task.constant import LOCAL_HOST
 
 
 def worker(worker_port, master_address):
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(levelname)-8s : %(message)s'
-    )
+    setup_logger()
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(("localhost", worker_port))
+    sock.bind((LOCAL_HOST, worker_port))
     logging.info(f"Worker started. Port {worker_port}")
 
     A1_value = 0
@@ -28,8 +27,6 @@ def worker(worker_port, master_address):
 
             sock.sendto(json.dumps(message).encode(), master_address)
             logging.info(f"Sent message to master: {message}")
-
-            # time.sleep(1)
 
     except KeyboardInterrupt:
         logging.info("Worker terminated")

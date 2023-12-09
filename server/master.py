@@ -3,33 +3,33 @@ import json
 import logging
 import time
 
-METRICS_FILE = "metrics.json"
+from Multiprocessing_task.logger import setup_logger
+from Multiprocessing_task.constant import LOCAL_HOST, METRICS_FILE
 
 
 def write_to_file(metric_data, count_type, current_time):
+    metrics_dict = {
+        "timestamp": current_time,
+        "count_type": count_type,
+        "A1_sum": metric_data["A1_sum"],
+        "A2_max": metric_data["A2_max"],
+        "A3_min": metric_data["A3_min"]
+    }
+
     with open(METRICS_FILE, "a") as file:
-        file.write(json.dumps({
-            "timestamp": current_time,
-            "count_type": count_type,
-            "A1_sum": metric_data["A1_sum"],
-            "A2_max": metric_data["A2_max"],
-            "A3_min": metric_data["A3_min"]
-        }) + '\n')
+        file.write(json.dumps(metrics_dict) + '\n')
 
 
 def master(master_port):
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(levelname)-8s : %(message)s'
-    )
+    setup_logger()
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(("localhost", master_port))
+    sock.bind((LOCAL_HOST, master_port))
     logging.info(f"Master started. Port {master_port}")
 
-    metric_data_10s = {"A1_sum": 0, "A2_max": float('-inf'), "A3_min": float('inf')}
-    metric_data_60s = {"A1_sum": 0, "A2_max": float('-inf'), "A3_min": float('inf')}
+    metric_data_10s = {"A1_sum": 0, "A2_max": 0, "A3_min": 100}
+    metric_data_60s = {"A1_sum": 0, "A2_max": 0, "A3_min": 100}
     start_time_10s = time.time()
     start_time_60s = time.time()
 
@@ -60,5 +60,6 @@ def master(master_port):
 
     except KeyboardInterrupt:
         logging.info("Master terminated")
+
     finally:
         sock.close()

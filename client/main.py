@@ -1,23 +1,7 @@
-from worker import worker
-
-import multiprocessing
+from worker_manager import run_workers
+from Multiprocessing_task.constant import LOCAL_HOST
 
 if __name__ == "__main__":
-    master_address = ("localhost", 9091)
-
-    worker_processes = []
-
-    for i in range(50):
-        worker_port = 9090 + i
-        worker_process = multiprocessing.Process(target=worker, args=(worker_port, master_address))
-        worker_processes.append(worker_process)
-        worker_process.start()
-
-    try:
-        for worker_process in worker_processes:
-            worker_process.join()
-
-    except KeyboardInterrupt:
-        for worker_process in worker_processes:
-            worker_process.terminate()
-            worker_process.join()
+    master_address = (LOCAL_HOST, 9091)
+    num_workers = 5
+    run_workers(master_address, num_workers)

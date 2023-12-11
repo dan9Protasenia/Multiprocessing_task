@@ -1,2 +1,2 @@
-LOCAL_HOST = "localhost"
-METRICS_FILE = "metrics.json"
+LOCAL_HOST = "127.0.0.1"
+MASTER_PORT = 12346

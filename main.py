@@ -18,9 +18,11 @@ class Worker:
 
     def start(self):
         setup_logger()
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((LOCAL_HOST, self.worker_port))
+
         logging.info(f"Worker started. Port {self.worker_port}")
 
         A1_value = 0
@@ -51,17 +53,14 @@ class Master:
         self.metric_data_10s = {"A1_sum": 0, "A2_max": 0, "A3_min": float('inf')}
         self.metric_data_60s = {"A1_sum": 0, "A2_max": 0, "A3_min": float('inf')}
 
-        self.sock = self.setup_socket()
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.bind((LOCAL_HOST, MASTER_PORT))
+
         self.output_file = output_file
         self.message_queue = Queue()
 
         logging.info(f"Master started. Port {MASTER_PORT}")
-
-    def setup_socket(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind((LOCAL_HOST, MASTER_PORT))
-        return self.sock
 
     def process_message(self, message):
         self.metric_data_10s["A1_sum"] += message["A1"]
@@ -72,7 +71,7 @@ class Master:
         self.metric_data_60s["A2_max"] = max(self.metric_data_60s["A2_max"], message["A2"])
         self.metric_data_60s["A3_min"] = min(self.metric_data_60s["A3_min"], message["A3"])
 
-    def log_metrics(self, count_type, metric_data, output_file):
+    def metrics(self, count_type, metric_data, output_file):
         log_metrics(count_type, metric_data, output_file)
 
     def worker_process(self, worker):
@@ -88,8 +87,10 @@ class Master:
 
         def handle_termination(signal, frame):
             logging.info("Terminating Master and Workers...")
+
             for process in worker_processes:
                 process.terminate()
+
             self.sock.close()
             sys.exit(0)
 
@@ -106,10 +107,10 @@ class Master:
 
                 current_time = int(time.time())
                 if current_time % 10 == 0:
-                    self.log_metrics("10s", self.metric_data_10s, self.output_file)
+                    self.metrics("10s", self.metric_data_10s, self.output_file)
 
                 if current_time % 60 == 0:
-                    self.log_metrics("60s", self.metric_data_60s, self.output_file)
+                    self.metrics("60s", self.metric_data_60s, self.output_file)
 
         except KeyboardInterrupt:
             logging.info("Master terminated")
